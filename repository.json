@@ -1,0 +1,18 @@
+{
+  "author": "TecnoSimples Tecnologia LTDA",
+  "gitHubUrl": "https://github.com/tecnosimples/hubitat_lifesmart",
+  "payPalUrl": "",
+  "packages": [
+    {
+      "name": "LifeSmart Local",
+      "category": "Integrations",
+      "location": "https://raw.githubusercontent.com/tecnosimples/hubitat_lifesmart/main/packageManifest.json",
+      "description": "Integração local (zero-cloud) entre Hubitat e LifeSmart Smart Station. Produto licenciado TecnoSimples.",
+      "tags": [
+        "LifeSmart",
+        "Local",
+        "Integrations"
+      ]
+    }
+  ]
+}

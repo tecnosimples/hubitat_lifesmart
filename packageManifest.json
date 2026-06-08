@@ -1,0 +1,80 @@
+{
+  "packageName": "LifeSmart Local",
+  "author": "TecnoSimples Tecnologia LTDA",
+  "version": "1.0.0",
+  "minimumHEVersion": "2.3.0",
+  "dateReleased": "2026-06-08",
+  "licenseFile": "https://raw.githubusercontent.com/tecnosimples/hubitat_lifesmart/main/LICENSE",
+  "drivers": [
+    {
+      "id": "365ed00b-7add-486c-a080-33eb87e5c262",
+      "name": "LifeSmart Smart Station Local",
+      "namespace": "tecnosimples",
+      "location": "https://raw.githubusercontent.com/tecnosimples/hubitat_lifesmart/main/drivers/LifeSmart-Local-Manager.groovy",
+      "required": true
+    },
+    {
+      "id": "8125cb1b-d276-4c13-8a59-899904504ddd",
+      "name": "LifeSmart Device",
+      "namespace": "tecnosimples",
+      "location": "https://raw.githubusercontent.com/tecnosimples/hubitat_lifesmart/main/drivers/LifeSmart-Child.groovy",
+      "required": true
+    },
+    {
+      "id": "a76cda04-7075-4620-910b-508d23902414",
+      "name": "LifeSmart Relay",
+      "namespace": "tecnosimples",
+      "location": "https://raw.githubusercontent.com/tecnosimples/hubitat_lifesmart/main/drivers/LifeSmart-Relay.groovy",
+      "required": true
+    },
+    {
+      "id": "ad91bd46-d934-42e6-9a76-f0a81505e14b",
+      "name": "LifeSmart Dimmer",
+      "namespace": "tecnosimples",
+      "location": "https://raw.githubusercontent.com/tecnosimples/hubitat_lifesmart/main/drivers/LifeSmart-Dimmer.groovy",
+      "required": true
+    },
+    {
+      "id": "29130fa0-fd2c-480c-8d35-6ebdfbcd3305",
+      "name": "LifeSmart CT Dimmer",
+      "namespace": "tecnosimples",
+      "location": "https://raw.githubusercontent.com/tecnosimples/hubitat_lifesmart/main/drivers/LifeSmart-CT-Dimmer.groovy",
+      "required": true
+    },
+    {
+      "id": "dae1a852-7c17-4977-8f52-6210252187d2",
+      "name": "LifeSmart RGBW",
+      "namespace": "tecnosimples",
+      "location": "https://raw.githubusercontent.com/tecnosimples/hubitat_lifesmart/main/drivers/LifeSmart-RGBW.groovy",
+      "required": true
+    },
+    {
+      "id": "55d263e4-ae58-4c54-b62a-f5e5c1fe555c",
+      "name": "LifeSmart Motion Sensor",
+      "namespace": "tecnosimples",
+      "location": "https://raw.githubusercontent.com/tecnosimples/hubitat_lifesmart/main/drivers/LifeSmart-Motion-Sensor.groovy",
+      "required": true
+    },
+    {
+      "id": "e6321751-6232-4792-9052-eae18ec04f2b",
+      "name": "LifeSmart Contact Sensor",
+      "namespace": "tecnosimples",
+      "location": "https://raw.githubusercontent.com/tecnosimples/hubitat_lifesmart/main/drivers/LifeSmart-Contact-Sensor.groovy",
+      "required": true
+    },
+    {
+      "id": "a5fac774-b766-4d86-8de2-f319c08340f2",
+      "name": "LifeSmart Button",
+      "namespace": "tecnosimples",
+      "location": "https://raw.githubusercontent.com/tecnosimples/hubitat_lifesmart/main/drivers/LifeSmart-Button.groovy",
+      "required": true
+    },
+    {
+      "id": "96d156ef-5d8a-4cea-ba87-f0b523e73fde",
+      "name": "LifeSmart Environment Sensor",
+      "namespace": "tecnosimples",
+      "location": "https://raw.githubusercontent.com/tecnosimples/hubitat_lifesmart/main/drivers/LifeSmart-Environment-Sensor.groovy",
+      "required": true
+    }
+  ]
+}
