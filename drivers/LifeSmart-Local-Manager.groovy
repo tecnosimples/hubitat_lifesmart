@@ -6,7 +6,7 @@
  * (c) 2026 TecnoSimples - Todos os direitos reservados.
  *
  * Produto licenciado. Distribuido via Hubitat Package Manager.
- * Versao do pacote: 1.0.0
+ * Versao do pacote: 1.0.1
  */
  
 metadata {
@@ -19,7 +19,6 @@ capability "Initialize"
 capability "Refresh"
 command "Descobrir Dispositivos"
 command "Limpar Cache IR"
-command "Dump EPS", [[name:"devid", type:"STRING", description:"devid específico (vazio = lista resumida de todos)"]]
 command "Ativar Licença"
 attribute "status", "string"
 attribute "hubUID", "string"
@@ -647,6 +646,7 @@ log.info "[EP] ${devid} | cls=${cls} | cgy=${cgy} | ${name}"
 state.eps = epsState
 state.lastEpsTime = now()
 state.phase = "polling"
+if (logEnable) dumpEpsSummary()
 
 log.info "[EPS] Socket mantido aberto para polling/eventos"
 
@@ -1509,6 +1509,7 @@ runIn(2, "retryPendingCommand")
 }
  
 def sendIRCommand(String devid, String remoteId, String buttonName) {
+if (!checkLicense()) { log.error "[CMD] Licença inativa — comando IR bloqueado"; return }
 if (logEnable) log.debug "[CMD] sendIRCommand(devid=${devid}, remoteId=${remoteId}, buttonName=${buttonName})"
 Map cmd = [
 isIR: true,
@@ -1685,28 +1686,15 @@ sendEvent(name: "status", value: "Comando enviado")
 }
  
  
-def "Dump EPS"(String devid = null) {
+ 
+private void dumpEpsSummary() {
 Map eps = (state.eps instanceof Map) ? (Map)state.eps : [:]
-if (!eps) {
-log.warn "[DUMP EPS] state.eps vazio — rode 'Iniciar Conexão' primeiro."
-return
-}
-String filter = devid?.trim()
-if (!filter) {
-log.info "[DUMP EPS] ${eps.size()} dispositivos:"
+if (!eps) return
+log.debug "[EPS-DUMP] ${eps.size()} dispositivos:"
 eps.each { k, v ->
 Map d = (v instanceof Map) ? (Map)v : [:]
-log.info "[DUMP EPS]   devid=${k} name='${d.name}' cls=${d.cls} cgy=${d.cgy}"
+log.debug "[EPS-DUMP]   devid=${k} name='${d.name}' cls=${d.cls} cgy=${d.cgy}"
 }
-log.info "[DUMP EPS] Rode novamente com um devid para ver a estrutura completa."
-return
-}
-def dev = eps[filter]
-if (dev == null) {
-log.warn "[DUMP EPS] devid '${filter}' não encontrado em state.eps."
-return
-}
-log.info "[DUMP EPS] devid=${filter} estrutura completa:\n${groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(dev))}"
 }
 def "Limpar Cache IR"() {
 log.info "[CMD] Limpando Cache IR..."
@@ -1724,7 +1712,7 @@ log.error "[LIMPEZA] Erro ao deletar child ${child.deviceNetworkId}: ${e.message
 }
 }
 log.info "[CMD] Cache IR limpo. ${deleted} child devices de IR foram removidos."
-sendEvent(name: "status", value: "Cache IR limpo (${deleted} apagados). Clique em Iniciar Conexão.")
+sendEvent(name: "status", value: "Cache IR limpo (${deleted} apagados). Clique em Refresh.")
 }
 
 
@@ -1737,14 +1725,21 @@ state.node = ""
 state.eps = [:]
 state.pendingCmd = null
 }
+def updated() {
+log.info "[LIFECYCLE] Preferências salvas"
+initialize()
+}
 def initialize() {
 log.info "[LIFECYCLE] Driver inicializado"
 state.phase = "idle"
 state.rxBuffer = ""
 state.pendingCmd = null
 sendEvent(name: "hubUID", value: getHubUID())
+
+
 if (checkLicense()) {
 sendEvent(name: "status", value: "Pronto")
+if (settings.deviceIP) connectAndLogin()
 }
 }
 def refresh() {
@@ -1765,7 +1760,7 @@ connectAndLogin()
 runIn(8, "DescobrirDispositivosDeferred")
 return
 }
-log.warn "[DISCOVER] Nenhum dispositivo em state.eps. Execute 'Iniciar Conexão' primeiro."
+log.warn "[DISCOVER] Nenhum dispositivo em state.eps. Execute 'Refresh' primeiro."
 sendEvent(name: "status", value: "Sem dispositivos no cache. Inicie conexao primeiro.")
 return
 }
