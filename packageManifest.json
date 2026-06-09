@@ -1,9 +1,9 @@
 {
   "packageName": "LifeSmart Local",
   "author": "TecnoSimples Tecnologia LTDA",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "minimumHEVersion": "2.3.0",
-  "dateReleased": "2026-06-08",
+  "dateReleased": "2026-06-09",
   "licenseFile": "https://raw.githubusercontent.com/tecnosimples/hubitat_lifesmart/main/LICENSE",
   "drivers": [
     {

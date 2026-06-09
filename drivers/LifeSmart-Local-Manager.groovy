@@ -6,7 +6,7 @@
  * (c) 2026 TecnoSimples - Todos os direitos reservados.
  *
  * Produto licenciado. Distribuido via Hubitat Package Manager.
- * Versao do pacote: 1.1.0
+ * Versao do pacote: 1.1.1
  */
  
 metadata {
@@ -1960,8 +1960,10 @@ return [
 "SL_DF_SR_V1": [deviceType: "siren", channels: ["P1"], cmdType: 128, onVal: 255, offVal: 0],
 
 
-"SL_SW_IF1_V4": [deviceType: "switch", channels: ["L1"], readOnly: true],
-"SL_SW_IF2_V4": [deviceType: "switch", channels: ["L1", "L2"], readOnly: true],
+
+
+"SL_SW_IF1_V4": [deviceType: "switch", channels: ["L1"], cmdType: 128, onVal: 1, offVal: 0, childDriver: "LifeSmart Relay"],
+"SL_SW_IF2_V4": [deviceType: "switch", channels: ["L1", "L2"], cmdType: 128, onVal: 1, offVal: 0, childDriver: "LifeSmart Relay"],
 "SL_SW_IF3_V4": [deviceType: "switch", channels: ["L1", "L2", "L3"], cmdType: 128, onVal: 1, offVal: 0, childDriver: "LifeSmart Relay"],
 "SL_SW_IF3": [deviceType: "switch", channels: ["L1", "L2", "L3"], cmdType: 128, onVal: 1, offVal: 0, childDriver: "LifeSmart Relay"],
 "SL_SF_IF3": [deviceType: "switch", channels: ["L1", "L2", "L3"], cmdType: 128, onVal: 1, offVal: 0, childDriver: "LifeSmart Relay"],
