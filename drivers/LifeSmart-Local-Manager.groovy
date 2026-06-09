@@ -6,7 +6,7 @@
  * (c) 2026 TecnoSimples - Todos os direitos reservados.
  *
  * Produto licenciado. Distribuido via Hubitat Package Manager.
- * Versao do pacote: 1.1.2
+ * Versao do pacote: 1.2.0
  */
  
 metadata {
@@ -20,6 +20,12 @@ capability "Refresh"
 command "Descobrir Dispositivos"
 command "Limpar Cache IR"
 command "Verificar Licença"
+command "Testar Comando RF", [
+[name:"devid*", type:"STRING", description:"devid hex (ex: 8754)"],
+[name:"canal*", type:"STRING", description:"canal/key (ex: L1)"],
+[name:"type*", type:"NUMBER", description:"cmdType (ex: 128)"],
+[name:"val*", type:"NUMBER", description:"valor (ex: 1)"]
+]
 attribute "status", "string"
 attribute "hubUID", "string"
 attribute "lastResponse", "string"
@@ -1695,6 +1701,22 @@ eps.each { k, v ->
 Map d = (v instanceof Map) ? (Map)v : [:]
 log.debug "[EPS-DUMP]   devid=${k} name='${d.name}' cls=${d.cls} cgy=${d.cgy}"
 }
+}
+ 
+def "Testar Comando RF"(String devid, String canal, BigDecimal type, BigDecimal val) {
+if (!checkLicense()) { log.error "[TEST] Licença inativa"; return }
+String d = devid?.trim()
+String ch = canal?.trim()
+if (!d || !ch) { log.error "[TEST] devid e canal são obrigatórios"; return }
+int t = (type != null) ? type.intValue() : 128
+int v = (val != null) ? val.intValue() : 0
+if (!isSessionReadyForCommand()) {
+log.warn "[TEST] Sessão indisponível (fase=${state.phase}) — clique Refresh e tente de novo."
+return
+}
+log.warn "[TEST] ⚙️ rfSetA CRU → devid=${d} key=${ch} type=${t} val=${v} valtag='m'"
+boolean ok = sendRfSetACommand(d, ch, t, (int)v, "m")
+log.warn "[TEST] Enviado=${ok}. Veja a resposta do firmware em [POLL RESP] a seguir."
 }
 def "Limpar Cache IR"() {
 log.info "[CMD] Limpando Cache IR..."
