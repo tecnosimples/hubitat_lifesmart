@@ -6,7 +6,7 @@
  * (c) 2026 TecnoSimples - Todos os direitos reservados.
  *
  * Produto licenciado. Distribuido via Hubitat Package Manager.
- * Versao do pacote: 1.3.0
+ * Versao do pacote: 1.3.1
  */
  
 metadata {
@@ -1206,6 +1206,14 @@ oldState[devStr] = newDev
 state.epsState = oldState
 }
  
+private Double rvToDouble(Object rv) {
+if (!(rv instanceof Map)) return null
+String hex = ((Map)rv)["hex"]?.toString()
+if (!hex || hex.length() != 16) return null
+try { return Double.longBitsToDouble(new BigInteger(hex, 16).longValue()) }
+catch (Exception ignored) { return null }
+}
+ 
 private Map extractTelemetryFromDevice(Map dm) {
 Map result = [:]
 try {
@@ -1220,18 +1228,12 @@ Object innerChd = mMap["_chd"]
 if (!(innerChd instanceof Map)) return result
 Map innerChdMap = (Map)innerChd
 
-Object tData = innerChdMap["T"]
-if (tData instanceof Map) {
-Object tVal = ((Map)tData)["val"]
-if (tVal != null) result["t"] = tVal
-}
 
-if (!result.containsKey("t")) {
-Object tTopData = dm["T"]
-if (tTopData instanceof Map) {
-Object tVal = ((Map)tTopData)["val"]
+Object tData = innerChdMap["T"] ?: dm["T"]
+if (tData instanceof Map) {
+Double tRv = rvToDouble(((Map)tData)["rv"])
+Object tVal = (tRv != null) ? (Math.round(tRv * 10.0) / 10.0) : ((Map)tData)["val"]
 if (tVal != null) result["t"] = tVal
-}
 }
 
 Object vData = innerChdMap["V"]
@@ -1249,7 +1251,8 @@ result["battType"] = vTypeInt
 
 Object hData = innerChdMap["H"]
 if (hData instanceof Map) {
-Object hVal = ((Map)hData)["val"]
+Double hRv = rvToDouble(((Map)hData)["rv"])
+Object hVal = (hRv != null) ? Math.round(hRv) : ((Map)hData)["val"]
 if (hVal != null) result["h"] = hVal
 }
 

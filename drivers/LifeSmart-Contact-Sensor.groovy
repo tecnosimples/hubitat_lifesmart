@@ -6,7 +6,7 @@
  * (c) 2026 TecnoSimples - Todos os direitos reservados.
  *
  * Produto licenciado. Distribuido via Hubitat Package Manager.
- * Versao do pacote: 1.3.0
+ * Versao do pacote: 1.3.1
  */
  
 metadata {
