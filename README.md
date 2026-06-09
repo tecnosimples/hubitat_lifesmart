@@ -18,19 +18,20 @@ Integração local (zero-cloud) entre Hubitat e LifeSmart Smart Station.
 
 1. Em **Devices**, crie um **Virtual Device** com o driver **LifeSmart Smart Station Local**.
 2. Copie o **HubUID** exibido na página do device e envie para **contato@tecnosimples.com.br**
-   para receber sua **chave de licença** (a chave é única por hub).
-3. Cole a chave no campo `licenseKey` e clique no comando **Ativar Licença**.
-4. Preencha **IP**, **usuário** e **senha** da central e clique em **Save Preferences** —
-   o driver conecta automaticamente (e reconecta sozinho após reinício do hub).
-5. Clique em **Descobrir Dispositivos** — os demais dispositivos aparecem automaticamente.
+   para liberar sua licença (a licença é única por hub; não há chave para digitar).
+3. Após a TecnoSimples liberar seu HubUID, preencha **IP**, **usuário** e **senha** da central
+   e clique em **Save Preferences** — o driver valida a licença online e conecta automaticamente
+   (e reconecta sozinho após reinício do hub). Se precisar, use **Verificar Licença** para revalidar.
+4. Clique em **Descobrir Dispositivos** — os demais dispositivos aparecem automaticamente.
 
-> Sem uma chave de licença válida, o driver não conecta nem controla nada.
+> Sem uma licença válida (ativa ou trial), o driver não conecta nem controla nada. O hub precisa de
+> internet para validar; depois disso funciona localmente (revalida periodicamente).
 
 ## Comandos do dispositivo (Parent)
 
 | Comando | O que faz |
 |---|---|
-| **Ativar Licença** | Valida a chave colada em `licenseKey`. Necessário antes de tudo. |
+| **Verificar Licença** | Revalida a licença online (status + vencimento) para o seu HubUID. |
 | **Refresh** | Reconecta à central e relê o estado de todos os dispositivos. |
 | **Descobrir Dispositivos** | Cria/atualiza os child devices a partir do que foi lido (pode rodar quantas vezes quiser — não duplica). |
 | **Limpar Cache IR** | Remove os controles remotos IR memorizados (dispositivos SPOT/IR). Use ao reconfigurar IR. |

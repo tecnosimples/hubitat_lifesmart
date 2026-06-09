@@ -6,7 +6,7 @@
  * (c) 2026 TecnoSimples - Todos os direitos reservados.
  *
  * Produto licenciado. Distribuido via Hubitat Package Manager.
- * Versao do pacote: 1.0.1
+ * Versao do pacote: 1.1.0
  */
  
 metadata {
@@ -19,7 +19,7 @@ capability "Initialize"
 capability "Refresh"
 command "Descobrir Dispositivos"
 command "Limpar Cache IR"
-command "Ativar Licença"
+command "Verificar Licença"
 attribute "status", "string"
 attribute "hubUID", "string"
 attribute "lastResponse", "string"
@@ -35,7 +35,7 @@ input name: "logEnable", type: "bool", title: "Habilitar Logs", defaultValue: tr
 input name: "forceWWMode", type: "enum", title: "Forçar modo SL_LI_WW_V2 (segurança)", options: ["auto","dimmer","color"], defaultValue: "auto"
 }
 section("Licença TecnoSimples") {
-input name: "licenseKey", type: "text", title: "Chave de Ativação", description: "Copie o atributo hubUID desta página e envie para contato@tecnosimples.com.br para receber sua chave.", required: false
+input name: "licenseUrl", type: "text", title: "<small>URL do serviço de licença (não alterar)</small>", required: false
 }
 }
 }
@@ -1737,12 +1737,12 @@ state.pendingCmd = null
 sendEvent(name: "hubUID", value: getHubUID())
 
 
-if (checkLicense()) {
-sendEvent(name: "status", value: "Pronto")
-if (settings.deviceIP) connectAndLogin()
-}
+unschedule("licenseHeartbeat")
+schedule("0 7 3 * * ?", "licenseHeartbeat") 
+requestLicenseCheck()
 }
 def refresh() {
+requestLicenseCheck()
 if (!checkLicense()) return
 log.info "[CMD] Refresh — iniciando Login + GetEPS"
 connectAndLogin()
@@ -2166,30 +2166,117 @@ try { String v = hub.id?.toString(); if (v) return v } catch (Exception ignored)
 log.error "[LICENÇA] Nenhuma propriedade de ID única disponível no hub"
 return "UNKNOWN"
 }
-private String generateExpectedKey(String uid) {
-String _a = "TECNO"; String _b = "SIMPL"; String _c = "ES202"; String _d = "5LIFE"; String _e = "SMART"
-String raw = uid + _a + _b + _c + _d + _e
-java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256")
-byte[] hash = md.digest(raw.getBytes("UTF-8"))
-return hubitat.helper.HexUtils.byteArrayToHexString(hash).take(16).toUpperCase()
+private String licenseEndpoint() {
+return (settings.licenseUrl?.trim()) ?: "https://script.google.com/macros/s/AKfycbwvNpGsy-9Xs4NRk6eer3HRZBXbkfhHJtqp23aIZJA1KBZJUJZ0OJnQvJ6PF36kcHjl/exec"
+}
+ 
+private void requestLicenseCheck() {
+Map params = [uri: licenseEndpoint(), query: [action: "check", uid: getHubUID()], timeout: 15]
+sendEvent(name: "status", value: "🔄 Verificando licença...")
+try {
+asynchttpGet("licenseCheckCallback", params, [hops: 0])
+} catch (Exception e) {
+log.warn "[LICENÇA] Falha ao iniciar consulta: ${e.message} — mantém último-status-bom"
+applyLicenseResponse(null)
+}
+}
+ 
+def licenseCheckCallback(resp, data) {
+int st = 0
+try { st = (resp?.status ?: 0) as int } catch (Exception ignored) {}
+if (st in [301, 302, 307, 308]) {
+String loc = null
+try { loc = resp?.headers?.find { it.key?.toString()?.equalsIgnoreCase("location") }?.value } catch (Exception ignored) {}
+int hops = (data?.hops ?: 0) as int
+if (loc && hops < 3) {
+asynchttpGet("licenseCheckCallback", [uri: loc, timeout: 15], [hops: hops + 1])
+return
+}
+}
+Map response = null
+try {
+if (st == 200 && resp?.data) {
+response = (Map) new groovy.json.JsonSlurper().parseText(resp.data.toString())
+} else {
+log.warn "[LICENÇA] HTTP ${st} — offline/erro, mantém último-status-bom"
+}
+} catch (Exception e) {
+log.warn "[LICENÇA] Resposta inválida (${e.message}) — mantém último-status-bom"
+}
+applyLicenseResponse(response)
+}
+ 
+private void applyLicenseResponse(Map response) {
+Map prev = (atomicState.lic instanceof Map) ? (Map)atomicState.lic : null
+boolean wasLicensed = licenseEvaluate(prev, now())
+atomicState.lic = licenseApplyCheck(prev, response, now())
+boolean nowLicensed = licenseEvaluate((Map)atomicState.lic, now())
+sendEvent(name: "status", value: nowLicensed
+? licenseStatusText((Map)atomicState.lic)
+: (response == null ? "📡 Offline — usando última validação" : licenseStatusText((Map)atomicState.lic)))
+if (nowLicensed && !wasLicensed && settings.deviceIP) {
+log.info "[LICENÇA] Licenciado — conectando."
+connectAndLogin()
+} else if (!nowLicensed && wasLicensed) {
+log.warn "[LICENÇA] Licença deixou de ser válida — bloqueando."
+}
+}
+ 
+def licenseHeartbeat() {
+long last = (atomicState.lic instanceof Map) ? ((atomicState.lic.lastCheck ?: 0L) as long) : 0L
+if (now() - last >= 4L * 24 * 60 * 60 * 1000) requestLicenseCheck()
 }
 private boolean checkLicense() {
-if (state.isLicensed == true) return true
-log.warn "[LICENÇA] Driver não licenciado. HubUID: ${getHubUID()} | Solicite em contato@tecnosimples.com.br"
-sendEvent(name: "status", value: "⚠️ Licença inativa — solicite em contato@tecnosimples.com.br")
-return false
+Map lic = (atomicState.lic instanceof Map) ? (Map)atomicState.lic : null
+boolean ok = licenseEvaluate(lic, now())
+if (logEnable) log.debug "[LICENÇA] checkLicense: status=${lic?.status} expiry=${lic?.expiry} → ${ok}"
+if (!ok) {
+log.warn "[LICENÇA] Inativa (status=${lic?.status ?: 'sem cache'}). HubUID: ${getHubUID()}"
+sendEvent(name: "status", value: licenseStatusText(lic))
 }
-def "Ativar Licença"() {
+return ok
+}
+ 
+private boolean licenseEvaluate(Map st, long nowMs) {
+if (st == null) return false
+String status = st["status"]?.toString()
+if (status != "active" && status != "trial") return false
+String expiry = st["expiry"]?.toString() ?: ""
+if (!expiry) return false
+long maxSeen = (st["maxSeen"] ?: 0L) as long
+long effective = Math.max(nowMs, maxSeen)
+return licenseDateStr(effective) <= expiry
+}
+ 
+private Map licenseApplyCheck(Map st, Map response, long nowMs) {
+long maxSeen = Math.max((st?.maxSeen ?: 0L) as long, nowMs)
+if (response == null) {
+if (st == null) return [status: "unknown", expiry: "", lastCheck: 0L, maxSeen: maxSeen]
+Map n = new LinkedHashMap(st)
+n["maxSeen"] = maxSeen
+return n
+}
+return [status: (response["status"]?.toString() ?: "notfound"),
+expiry: (response["expiry"]?.toString() ?: ""),
+lastCheck: nowMs, maxSeen: maxSeen]
+}
+ 
+private String licenseDateStr(long ms) {
+return new Date(ms).format("yyyy-MM-dd", location.timeZone ?: TimeZone.getTimeZone("UTC"))
+}
+ 
+private String licenseStatusText(Map lic) {
 String uid = getHubUID()
-String expected = generateExpectedKey(uid)
-String provided = settings.licenseKey?.trim() ?: ""
-if (provided && provided.equalsIgnoreCase(expected)) {
-state.isLicensed = true
-log.info "[LICENÇA] ✅ Ativada com sucesso — HubUID: ${uid}"
-sendEvent(name: "status", value: "✅ Licença ativa")
-} else {
-state.isLicensed = false
-log.error "[LICENÇA] ❌ Chave inválida — HubUID: ${uid}"
-sendEvent(name: "status", value: "❌ Chave de licença inválida")
+if (lic == null) return "⚠️ Sem licença (HubUID: ${uid})"
+switch (lic["status"]?.toString()) {
+case "active": return "✅ Licença ativa (vence ${lic.expiry})"
+case "trial": return "🧪 Trial (vence ${lic.expiry})"
+case "revoked": return "❌ Licença revogada"
+case "unknown": return "📡 Offline — sem validação ainda (HubUID: ${uid})"
+default: return "⚠️ Sem licença (HubUID: ${uid})"
 }
+}
+def "Verificar Licença"() {
+log.info "[LICENÇA] Verificação manual solicitada — HubUID: ${getHubUID()}"
+requestLicenseCheck()
 }
